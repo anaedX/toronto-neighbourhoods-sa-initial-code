@@ -1,91 +1,50 @@
-from nltk.stem.wordnet import WordNetLemmatizer
-from nltk.corpus import twitter_samples, stopwords
-from nltk.tokenize import word_tokenize
-from nltk.tag import pos_tag
-from nltk import FreqDist, classify, NaiveBayesClassifier
 import pickle
+import random
+from sklearn.pipeline import Pipeline
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import classification_report
 
 
-import re, string, random
+dataset = pickle.load(open('data/cleaned_nltk_data.pkl', 'rb'))
 
-def remove_noise(tweet_tokens, stop_words = ()):
+random.shuffle(dataset)
 
-    cleaned_tokens = []
+num_folds = 10
+subset_size = round(len(dataset)/num_folds)
+total = 0
 
-    for token, tag in pos_tag(tweet_tokens):
-        token = re.sub('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]|'\
-                       '(?:%[0-9a-fA-F][0-9a-fA-F]))+','', token)
-        token = re.sub("(@[A-Za-z0-9_]+)","", token)
+train_vals = []
+train_labels = []
+for tweet in dataset:
+    sentence = []
+    for word in tweet[0]:
+        sentence.append(word)
+    train_vals.append(' '.join(sentence))
+    if tweet[1] == 'Positive':
+        train_labels.append(1)
+    else:
+        train_labels.append(0)
 
-        if tag.startswith("NN"):
-            pos = 'n'
-        elif tag.startswith('VB'):
-            pos = 'v'
-        else:
-            pos = 'a'
+text_clf = Pipeline([('vect', CountVectorizer()),
+                     ('tfidf', TfidfTransformer()),
+                     ('clf', MultinomialNB())])
+tuned_parameters = {
+    'vect__ngram_range': [(1, 1), (1, 2), (2, 2)],
+    'tfidf__use_idf': (True, False),
+    'tfidf__norm': ('l1', 'l2'),
+    'clf__alpha': [1, 1e-1, 1e-2]
+}
 
-        lemmatizer = WordNetLemmatizer()
-        token = lemmatizer.lemmatize(token, pos)
+x_train, x_test, y_train, y_test = train_test_split(train_vals, train_labels, test_size=0.2, random_state=42)
+clf = GridSearchCV(text_clf, tuned_parameters, cv=10, scoring='accuracy')
+clf.fit(x_train, y_train)
 
-        if len(token) > 0 and token not in string.punctuation and token.lower() not in stop_words:
-            cleaned_tokens.append(token.lower())
-    return cleaned_tokens
+print(classification_report(y_test, clf.predict(x_test), digits=4))
 
-def get_all_words(cleaned_tokens_list):
-    for tokens in cleaned_tokens_list:
-        for token in tokens:
-            yield token
+print(clf.best_params_)
 
-def get_tweets_for_model(cleaned_tokens_list):
-    for tweet_tokens in cleaned_tokens_list:
-        yield dict([token, True] for token in tweet_tokens)
-
-if __name__ == "__main__":
-
-    positive_tweets = twitter_samples.strings('positive_tweets.json')
-    negative_tweets = twitter_samples.strings('negative_tweets.json')
-    text = twitter_samples.strings('tweets.20150430-223406.json')
-    tweet_tokens = twitter_samples.tokenized('positive_tweets.json')[0]
-
-    stop_words = stopwords.words('english')
-
-    positive_tweet_tokens = twitter_samples.tokenized('positive_tweets.json')
-    negative_tweet_tokens = twitter_samples.tokenized('negative_tweets.json')
-
-    positive_cleaned_tokens_list = []
-    negative_cleaned_tokens_list = []
-
-    for tokens in positive_tweet_tokens:
-        positive_cleaned_tokens_list.append(remove_noise(tokens, stop_words))
-
-    for tokens in negative_tweet_tokens:
-        negative_cleaned_tokens_list.append(remove_noise(tokens, stop_words))
-
-    all_pos_words = get_all_words(positive_cleaned_tokens_list)
-
-    freq_dist_pos = FreqDist(all_pos_words)
-    # print(freq_dist_pos.most_common(10))
-
-    positive_tokens_for_model = get_tweets_for_model(positive_cleaned_tokens_list)
-    negative_tokens_for_model = get_tweets_for_model(negative_cleaned_tokens_list)
-
-    positive_dataset = [(tweet_dict, "Positive")
-                         for tweet_dict in positive_tokens_for_model]
-
-    negative_dataset = [(tweet_dict, "Negative")
-                         for tweet_dict in negative_tokens_for_model]
-
-    dataset = positive_dataset + negative_dataset
-
-    random.shuffle(dataset)
-
-    train_data = dataset[:7000]
-    test_data = dataset[7000:]
-
-    nb_classifier = NaiveBayesClassifier.train(train_data)
-
-    f = open('models/nb_classifier.pickle', 'wb')
-    pickle.dump(nb_classifier, f)
-    f.close()
-
-    print("Accuracy is:", classify.accuracy(nb_classifier, test_data))
+f = open('models/nb_classifier.pickle', 'wb')
+pickle.dump(clf, f)
+f.close()

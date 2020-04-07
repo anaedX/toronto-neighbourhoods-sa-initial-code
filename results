@@ -1,23 +1,51 @@
-Scoring on NLTK test set:
-    SVM: report:  {'0': {'precision': 0.7143730886850153, 'recall': 0.8066298342541437, 'f1-score': 0.7577035355173531, 'support': 1448}, '1': {'precision': 0.7948717948717948, 'recall': 0.6990979381443299, 'f1-score': 0.743914981145012, 'support': 1552}, 'accuracy': 0.751, 'macro avg': {'precision': 0.7546224417784051, 'recall': 0.7528638861992367, 'f1-score': 0.7508092583311825, 'support': 3000}, 'weighted avg': {'precision': 0.7560177526856426, 'recall': 0.751, 'f1-score': 0.750570256722062, 'support': 3000}}
-    NB: {accuracy: 0.995}
-    Stanford trained NB: {accuracy: 0.995}
-    LR: {accuracy : 0.771}
 
-Toronto:
-    SVM: {'Positive': 1830, 'Negative': 563}
-    NB: {'Positive': 908, 'Negative': 1485}
-    Stanford trained NB: {'Positive': 1358, 'Negative': 1035}
-    LR: {'Positive': 1772, 'Negative': 621}
+SVM: {accuracy: 0.6966}
+NB:  {accuracy: 0.7449}
+LR:  {accuracy: 0.6991}
+RF:  {accuracy: 0.6786}
 
-Montreal:
-    SVM: {'Positive': 1904, 'Negative': 675}
-    NB: {'Positive': 1234, 'Negative': 1345}
-    Stanford trained NB: {'Positive': 1401, 'Negative': 1178}
-    LR: {'Positive': 1954, 'Negative': 625}
 
-Vancouver:
-    SVM: {'Positive': 1718, 'Negative': 752}
-    NB: {'Positive': 1260, 'Negative': 1210}
-    Stanford trained NB: {'Positive': 1682, 'Negative': 788}
-    LR: {'Positive': 1728, 'Negative': 742}
+Naive Bayes Multinomial with 10 k-fold cross validation {'clf__alpha': 1, 'tfidf__norm': 'l2', 'tfidf__use_idf': False, 'vect__ngram_range': (1, 2)}:
+              precision    recall  f1-score   support
+           0     0.7247    0.7914    0.7566      4008
+           1     0.7693    0.6982    0.7320      3993
+    accuracy                         0.7449      8001
+   macro avg     0.7470    0.7448    0.7443      8001
+weighted avg     0.7470    0.7449    0.7443      8001
+
+
+SVM with paramter hyper tuning (C=1, break_ties=False, cache_size=200, class_weight=None, coef0=0.0,
+    decision_function_shape='ovr', degree=3, gamma=1, kernel='rbf', max_iter=-1,
+    probability=False, random_state=None, shrinking=True, tol=0.001,
+    verbose=False):
+              precision    recall  f1-score   support
+           0     0.7083    0.6690    0.6879      18001
+           1     0.6865    0.7243    0.7047      18001
+    accuracy                         0.6966
+   macro avg     0.6974    0.6966    0.6963      36002
+weighted avg     0.6974    0.6966    0.6963      36002
+
+
+Random Forest:
+              precision    recall  f1-score   support
+           0     0.6990    0.6351    0.6651       403
+           1     0.6617    0.7223    0.6903       397
+    accuracy                         0.6786       800
+   macro avg     0.6803    0.6787    0.6776       800
+weighted avg     0.6807    0.6786    0.6779       800
+
+
+Logistic regeression with c=1, penalty=l2:
+              precision    recall  f1-score   support
+           0     0.7186    0.6572    0.6865     18050
+           1     0.6826    0.7412    0.7107     17952
+    accuracy                         0.6991     36002
+   macro avg     0.7006    0.6992    0.6986     36002
+weighted avg     0.7006    0.6991    0.6986     36002
+
+
+
+Results:
+Toronto:   {'Positive': 1184, 'Negative': 1209}
+Montreal:  {'Positive': 1400, 'Negative': 1179}
+Vancouver: {'Positive': 1348, 'Negative': 1122}
